@@ -68,16 +68,23 @@ void Camera::move(float timeStep)
         lookAt.z -= timeStep * speed;
     }
 
-    // Actualizamos las colisiones.
-    coll->update(make_identity()); // Usamos matriz identidad porque solo cambia la posición
-    coll->center = position;
+    // Actualizar colisionador con la nueva posición
+    if (coll) {
+        matrix4x4f transMat = make_translate(position.x, position.y, position.z);
+        coll->update(transMat);
+    }
 
-    // Verificar colisión (implementar esta función en Render).
+    // Verificar colisión (implementar esta función en Render)
     if (r && r->cameraCollision(this)) {
         cout << "DEBUG (Camera.cpp): Se he detectado una colisión, retrocediendo a la posición anterior." << endl;
         position = prevPosition;
         lookAt = prevLookAt;
-        coll->update(make_translate(position.x, position.y, position.z));
+
+        // Actualizar colisionador con la posición anterior
+        if (coll) {
+            matrix4x4f transMat = make_translate(position.x, position.y, position.z);
+            coll->update(transMat);
+        }
     }
     else {
         cout << "DEBUG (Camera.cpp): Movimiento permitido. Moviendose a ( " << position.x << ", "
@@ -146,18 +153,25 @@ void CameraFirstPerson::move(float timeStep)
     }
 
     // Actualizar colisionador
-    coll->update(make_identity());
-    coll->center = position;
+    if (coll) {
+        matrix4x4f transMat = make_translate(position.x, position.y, position.z);
+        coll->update(transMat);
+    }
 
     // Verificar colisión
     if (r && r->cameraCollision(this)) {
         cout << "DEBUG (Camera.cpp): Se he detectado una colisión, retrocediendo a la posición anterior.\n" << endl;
         position = prevPosition;
         lookAt = prevLookAt;
-        coll->update(make_translate(position.x, position.y, position.z));
+
+        // Actualizar colisionador con la posición anterior
+        if (coll) {
+            matrix4x4f transMat = make_translate(position.x, position.y, position.z);
+            coll->update(transMat);
+        }
     }
     else {
-        cout <<  "DEBUG (Camera.cpp): Movimiento permitido. Moviendose a ( " << position.x << ", "
+        cout << "DEBUG (Camera.cpp): Movimiento permitido. Moviendose a ( " << position.x << ", "
             << position.y << ", " << position.z << ")\n" << endl;
     }
 }

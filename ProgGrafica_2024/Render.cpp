@@ -222,35 +222,40 @@ void Render::putCamera(Camera* cam)
 	this->camera = cam;
 }
 
-bool Render::cameraCollision(Camera* camera) 
+bool Render::cameraCollision(Camera* camera)
 {
-	if (!camera || !camera->coll) 
+	if (!camera || !camera->coll)
 	{
-		cout << "ERROR (" << __FILE__ << "): El colisionador de la cámara es NULO.\n" << endl;
+		cout << "DEBUG (" << __FILE__ << "): El colisionador de la cámara es NULO.\n" << endl;
 		return false;
 	}
 
-	cout << "DEBUG: Comprobando colisiones para cámara en posición (" << camera->position.x << ", "
-		<< camera->position.y << ", " << camera->position.z << ") con radio: "
-		<< static_cast<Sphere*>(camera->coll)->radius << endl;
-	
-	for (auto& [id, obj] : objectList) 
-	{
-		if (obj->collider) 
-		{
-			cout << "DEBUG: Probando contra objeto ID: " << id << " en posición (" << obj->position.x
-				<< ", " << obj->position.y << ", " << obj->position.z << ")";
+	// Obtén el colisionador real (Sphere o AABB) desde el BoundingVolume
+	cout << "DEBUG: Comprobando colisiones para cámara en posición ("
+		<< camera->position.x << ", " << camera->position.y << ", "
+		<< camera->position.z << ")" << endl;
 
-			if (obj->collider->type == sphere) 
-			{
-				Sphere* objSphere = static_cast<Sphere*>(obj->collider);
-				cout << " con radio: " << objSphere->radius;
+	// Añade esta información si está disponible
+	if (camera->coll->getType() == SPHERE_TYPE) {
+		cout << " con radio: " << camera->coll->getSize().x / 2 << endl;
+	}
+
+	for (auto& [id, obj] : objectList)
+	{
+		if (obj->collider)
+		{
+			cout << "DEBUG: Probando contra objeto ID: " << id
+				<< " en posición (" << obj->position.x << ", "
+				<< obj->position.y << ", " << obj->position.z << ")";
+
+			// Mostrar información específica del tipo de volumen
+			if (obj->collider->getType() == SPHERE_TYPE) {
+				cout << " con radio: " << obj->collider->getSize().x / 2;
 			}
 
 			cout << endl;
 			bool collision = obj->collider->test(camera->coll);
-			if (collision) 
-			
+			if (collision)
 			{
 				cout << "DEBUG: COLISIÓN DETECTADA con objeto ID: " << id << endl;
 				return true;
