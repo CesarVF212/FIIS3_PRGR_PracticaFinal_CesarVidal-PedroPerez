@@ -222,35 +222,42 @@ void Render::putCamera(Camera* cam)
 	this->camera = cam;
 }
 
-bool Render::cameraCollision(Camera* camera) {
-	if (!camera || !camera->coll) {
-		cout << "Camera or camera collider is null" << endl;
+bool Render::cameraCollision(Camera* camera) 
+{
+	if (!camera || !camera->coll) 
+	{
+		cout << "ERROR (" << __FILE__ << "): El colisionador de la cámara es NULO.\n" << endl;
 		return false;
 	}
 
-	cout << "Checking collisions for camera at (" << camera->position.x << ", "
-		<< camera->position.y << ", " << camera->position.z << ") with radius: "
+	cout << "DEBUG: Comprobando colisiones para cámara en posición (" << camera->position.x << ", "
+		<< camera->position.y << ", " << camera->position.z << ") con radio: "
 		<< static_cast<Sphere*>(camera->coll)->radius << endl;
-
-	for (auto& [id, obj] : objectList) {
-		if (obj->collider) {
-			cout << "  Testing against object ID: " << id << " at (" << obj->position.x
+	
+	for (auto& [id, obj] : objectList) 
+	{
+		if (obj->collider) 
+		{
+			cout << "DEBUG: Probando contra objeto ID: " << id << " en posición (" << obj->position.x
 				<< ", " << obj->position.y << ", " << obj->position.z << ")";
 
-			if (obj->collider->type == sphere) {
+			if (obj->collider->type == sphere) 
+			{
 				Sphere* objSphere = static_cast<Sphere*>(obj->collider);
-				cout << " with radius: " << objSphere->radius;
+				cout << " con radio: " << objSphere->radius;
 			}
-			cout << endl;
 
+			cout << endl;
 			bool collision = obj->collider->test(camera->coll);
-			if (collision) {
-				cout << "  COLLISION DETECTED with object ID: " << id << endl;
+			if (collision) 
+			
+			{
+				cout << "DEBUG: COLISIÓN DETECTADA con objeto ID: " << id << endl;
 				return true;
 			}
 		}
 	}
-	cout << "No collisions detected" << endl;
+	cout << "DEBUG: No se han detectado colisiones" << endl;
 	return false;
 }
 
