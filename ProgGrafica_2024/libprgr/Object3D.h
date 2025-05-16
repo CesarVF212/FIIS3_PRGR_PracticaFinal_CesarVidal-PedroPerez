@@ -32,9 +32,9 @@ public:
 		COLLIDER_SPHERE,  // Colisionador de tipo esfera
 		COLLIDER_AABB     // Colisionador de tipo AABB (caja alineada a ejes)
 	} ColliderType;
-	
-	BoundingVolume* collider;
-	ColliderType colliderType = COLLIDER_SPHERE; // Valor por defecto
+
+	ColliderType colliderType = COLLIDER_SPHERE;
+	Collider* collider = nullptr;
 
 	// MATERIAL
 

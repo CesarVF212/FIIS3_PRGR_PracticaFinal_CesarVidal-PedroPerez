@@ -222,47 +222,35 @@ void Render::putCamera(Camera* cam)
 	this->camera = cam;
 }
 
-bool Render::cameraCollision(Camera* camera)
-{
-	if (!camera || !camera->coll)
-	{
-		cout << "DEBUG (" << __FILE__ << "): El colisionador de la cámara es NULO.\n" << endl;
+bool Render::cameraCollision(Camera* camera) {
+	if (!camera || !camera->coll) {
+		cout << "Camera or camera collider is null" << endl;
 		return false;
 	}
 
-	// Obtén el colisionador real (Sphere o AABB) desde el BoundingVolume
-	cout << "DEBUG: Comprobando colisiones para cámara en posición ("
-		<< camera->position.x << ", " << camera->position.y << ", "
-		<< camera->position.z << ")" << endl;
+	cout << "Checking collisions for camera at (" << camera->position.x << ", "
+		<< camera->position.y << ", " << camera->position.z << ") with radius: "
+		<< static_cast<Sphere*>(camera->coll)->radius << endl;
 
-	// Añade esta información si está disponible
-	if (camera->coll->getType() == SPHERE_TYPE) {
-		cout << " con radio: " << camera->coll->getSize().x / 2 << endl;
-	}
+	for (auto& [id, obj] : objectList) {
+		if (obj->collider) {
+			cout << "  Testing against object ID: " << id << " at (" << obj->position.x
+				<< ", " << obj->position.y << ", " << obj->position.z << ")";
 
-	for (auto& [id, obj] : objectList)
-	{
-		if (obj->collider)
-		{
-			cout << "DEBUG: Probando contra objeto ID: " << id
-				<< " en posición (" << obj->position.x << ", "
-				<< obj->position.y << ", " << obj->position.z << ")";
-
-			// Mostrar información específica del tipo de volumen
-			if (obj->collider->getType() == SPHERE_TYPE) {
-				cout << " con radio: " << obj->collider->getSize().x / 2;
+			if (obj->collider->type == sphere) {
+				Sphere* objSphere = static_cast<Sphere*>(obj->collider);
+				cout << " with radius: " << objSphere->radius;
 			}
-
 			cout << endl;
+
 			bool collision = obj->collider->test(camera->coll);
-			if (collision)
-			{
-				cout << "DEBUG: COLISIÓN DETECTADA con objeto ID: " << id << endl;
+			if (collision) {
+				cout << "  COLLISION DETECTED with object ID: " << id << endl;
 				return true;
 			}
 		}
 	}
-	cout << "DEBUG: No se han detectado colisiones" << endl;
+	cout << "No collisions detected" << endl;
 	return false;
 }
 

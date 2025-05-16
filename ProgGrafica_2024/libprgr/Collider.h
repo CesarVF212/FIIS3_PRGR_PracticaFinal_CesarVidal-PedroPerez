@@ -1,141 +1,129 @@
 #pragma once
 #include "common.h"
-#include <vector>
-#include <limits>
 #include "vectorMath.h"
 using namespace libPRGR;
 
-class Sphere;
-class AABB;
-class BoundingVolume;
+typedef enum {
+    sphere, AABB_t
+} collTypes;
 
-// Tipos de partículas
-enum ParticleType {
-    VERTEX_PARTICLE,
-    TRIANGLE_PARTICLE,
-    PIXEL_PARTICLE
-};
+typedef enum {
+    VERTEX_PARTICLE,    // Para un único vértice en 3D
+    TRIANGLE_PARTICLE,  // Para un triángulo (3 vértices) en 3D
+    PIXEL_PARTICLE      // Para un píxel en 2D
+} ParticleType;
 
-// Estructura para representar una partícula
-struct particle {
-    ParticleType type;
-    vector4f min;
-    vector4f max;
-};
+typedef struct particle {
+    ParticleType type;  // Tipo de partícula
+    vector4f min;       // Coordenadas mínimas (o posición del vértice/píxel)
+    vector4f max;       // Coordenadas máximas (o posición adicional para triángulos)
+    vector4f color;     // Color del píxel (para objetos 2D, opcional)
+} particle;
 
-// Tipos de colisionadores
-enum ColliderType {
-    SPHERE_TYPE,
-    AABB_TYPE
-};
-
-#pragma region --- COLLIDER BASE ---
-// Clase base para todos los colisionadores
 class Collider {
 public:
-    Collider() {}
-    virtual ~Collider() {}
+    collTypes type = sphere;
+    std::vector<particle> partList;
+    std::vector<Collider*> sons; // opcional - para jerarquía
 
-    virtual bool test(Collider* other) = 0;
+    Collider() {};
+    virtual ~Collider() {
+        for (auto& son : sons) {
+            delete son;
+        }
+    }
+
+    // Métodos para añadir partículas
+    void addVertex(vector4f vertex) {
+        particle p;
+        p.type = VERTEX_PARTICLE;
+        p.min = vertex;
+        p.max = vertex; // Para vértices, min y max son iguales
+        addParticle(p);
+    }
+
+    void addTriangle(vector4f v1, vector4f v2, vector4f v3) {
+        particle p;
+        p.type = TRIANGLE_PARTICLE;
+        p.min = { std::min({v1.x, v2.x, v3.x}),
+                  std::min({v1.y, v2.y, v3.y}),
+                  std::min({v1.z, v2.z, v3.z}), 1 };
+        p.max = { std::max({v1.x, v2.x, v3.x}),
+                  std::max({v1.y, v2.y, v3.y}),
+                  std::max({v1.z, v2.z, v3.z}), 1 };
+        addParticle(p);
+    }
+
+    void addPixel(vector4f position, vector4f color) {
+        particle p;
+        p.type = PIXEL_PARTICLE;
+        p.min = position;
+        p.max = position; // Para píxeles, min y max son iguales
+        p.color = color;  // Almacena el color (para detectar transparencia)
+        addParticle(p);
+    }
+
+    // Método para añadir partículas al colisionador
+    virtual void addParticle(particle part) = 0;
+
+    // Test de colisión entre dos objetos tipo collider
+    virtual bool test(Collider* c2) = 0;
+
+    // Actualizar el colisionador cuando las partículas se mueven
     virtual void update(matrix4x4f mat) = 0;
+
+    // Opcional - subdivisión para jerarquía de volúmenes
+    virtual void subdivide() = 0;
+
+    // Obtener el centro geométrico
     virtual vector4f getCenter() const = 0;
+
+    // Obtener tamaño
     virtual vector4f getSize() const = 0;
 };
-#pragma endregion
 
-#pragma region --- COLLIDER ESFÉRICO ---
-// Clase para colisionadores de tipo esfera
 class Sphere : public Collider {
 public:
+    vector4f center;         // Centro actual de la esfera
+    vector4f centerOrigin;   // Centro original de la esfera
+    float radius;            // Radio actual de la esfera
+    float radiusOrigin;      // Radio original de la esfera
+
     Sphere();
     Sphere(vector4f center, float radius);
-    virtual ~Sphere();
+    ~Sphere() override;
 
-    virtual bool test(Collider* other) override;
-    virtual void update(matrix4x4f mat) override;
-    virtual vector4f getCenter() const override;
-    virtual vector4f getSize() const override;
+    // Implementación de métodos de la clase base
+    void addParticle(particle part) override;
+    bool test(Collider* c2) override;
+    void update(matrix4x4f mat) override;
+    void subdivide() override;
 
+    // Métodos específicos de Sphere
+    vector4f getCenter() const override;
+    vector4f getSize() const override;
     void computeBoundingSphere();
-
-    vector4f center;      // Centro de la esfera transformado
-    vector4f centerOrigin; // Centro original sin transformar
-    float radius;         // Radio de la esfera transformado
-    float radiusOrigin;  // Radio original sin transformar
 };
-#pragma endregion
 
-#pragma region --- COLLIDER AABB (POR CAJAS) ---
-// Clase para colisionadores de tipo caja alineada con los ejes
 class AABB : public Collider {
 public:
+    vector4f min;            // Esquina mínima de la caja
+    vector4f max;            // Esquina máxima de la caja
+    vector4f minOrigin;      // Esquina mínima original
+    vector4f maxOrigin;      // Esquina máxima original
+
     AABB();
     AABB(vector4f min, vector4f max);
-    virtual ~AABB();
+    ~AABB() override;
 
-    virtual bool test(Collider* other) override;
-    virtual void update(matrix4x4f mat) override;
-    virtual vector4f getCenter() const override;
-    virtual vector4f getSize() const override;
+    // Implementación de métodos de la clase base
+    void addParticle(particle part) override;
+    bool test(Collider* c2) override;
+    void update(matrix4x4f mat) override;
+    void subdivide() override;
 
+    // Métodos específicos de AABB
+    vector4f getCenter() const override;
+    vector4f getSize() const override;
     void computeBoundingBox();
-
-    vector4f min;      // Esquina mínima de la caja transformada
-    vector4f max;      // Esquina máxima de la caja transformada
-    vector4f minOrigin; // Esquina mínima original sin transformar
-    vector4f maxOrigin; // Esquina máxima original sin transformar
 };
-#pragma endregion
-
-#pragma region --- COLLIDER BOUNDING VOLUME (JARAQUICO) ---
-// Clase para la jerarquía de volúmenes envolventes
-class BoundingVolume {
-public:
-    BoundingVolume();
-    BoundingVolume(ColliderType type);
-    ~BoundingVolume();
-
-    // Manejo de partículas
-    void addParticle(particle part);
-    void clearParticles();
-
-    // Detección de colisiones
-    bool test(BoundingVolume* other);
-
-    // Actualización y transformación
-    void update(matrix4x4f mat);
-
-    // Construcción de la jerarquía
-    void buildHierarchy();
-    void subdivide(BoundingVolume* node);
-
-    // Getters
-    vector4f getCenter() const;
-    vector4f getSize() const;
-    ColliderType getType() const { return type; }
-
-    // Cálculo de volumenes envolventes.
-    void computeBoundingSphere();
-    void computeBoundingBox();
-
-private:
-    // Tipo de volumen envolvente (esfera o AABB)
-    ColliderType type;
-
-    // Colisionador concreto (esfera o caja)
-    union {
-        Sphere* sphere;
-        AABB* aabb;
-    } collider;
-
-    // Lista de partículas contenidas en este volumen
-    std::vector<particle> partList;
-
-    // Nodos hijos (para la jerarquía)
-    BoundingVolume* leftChild;
-    BoundingVolume* rightChild;
-
-    // Indica si este nodo es una hoja
-    bool isLeaf;
-};
-#pragma endregion

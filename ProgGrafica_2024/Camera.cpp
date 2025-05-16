@@ -68,27 +68,20 @@ void Camera::move(float timeStep)
         lookAt.z -= timeStep * speed;
     }
 
-    // Actualizar colisionador con la nueva posición
-    if (coll) {
-        matrix4x4f transMat = make_translate(position.x, position.y, position.z);
-        coll->update(transMat);
-    }
+    // Actualizar colisionador
+    coll->update(make_identity()); // Usamos matriz identidad porque solo cambia la posición
+    coll->center = position;
 
     // Verificar colisión (implementar esta función en Render)
     if (r && r->cameraCollision(this)) {
-        cout << "DEBUG (Camera.cpp): Se he detectado una colisión, retrocediendo a la posición anterior." << endl;
+        cout << "Collision occurred, reverting position" << endl;
         position = prevPosition;
         lookAt = prevLookAt;
-
-        // Actualizar colisionador con la posición anterior
-        if (coll) {
-            matrix4x4f transMat = make_translate(position.x, position.y, position.z);
-            coll->update(transMat);
-        }
+        coll->update(make_translate(position.x, position.y, position.z));
     }
     else {
-        cout << "DEBUG (Camera.cpp): Movimiento permitido. Moviendose a ( " << position.x << ", "
-            << position.y << ", " << position.z << " )" << endl;
+        cout << "Movement successful to (" << position.x << ", "
+            << position.y << ", " << position.z << ")" << endl;
     }
 }
 
@@ -153,25 +146,18 @@ void CameraFirstPerson::move(float timeStep)
     }
 
     // Actualizar colisionador
-    if (coll) {
-        matrix4x4f transMat = make_translate(position.x, position.y, position.z);
-        coll->update(transMat);
-    }
+    coll->update(make_identity());
+    coll->center = position;
 
     // Verificar colisión
     if (r && r->cameraCollision(this)) {
-        cout << "DEBUG (Camera.cpp): Se he detectado una colisión, retrocediendo a la posición anterior.\n" << endl;
+        cout << "Collision occurred, reverting position" << endl;
         position = prevPosition;
         lookAt = prevLookAt;
-
-        // Actualizar colisionador con la posición anterior
-        if (coll) {
-            matrix4x4f transMat = make_translate(position.x, position.y, position.z);
-            coll->update(transMat);
-        }
+        coll->update(make_translate(position.x, position.y, position.z));
     }
     else {
-        cout << "DEBUG (Camera.cpp): Movimiento permitido. Moviendose a ( " << position.x << ", "
-            << position.y << ", " << position.z << ")\n" << endl;
+        cout << "Movement successful to (" << position.x << ", "
+            << position.y << ", " << position.z << ")" << endl;
     }
 }

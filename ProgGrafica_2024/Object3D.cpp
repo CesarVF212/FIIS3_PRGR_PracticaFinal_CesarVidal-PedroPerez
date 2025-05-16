@@ -129,9 +129,6 @@ void Object3D::leerNormales(std::ifstream& f)
 void Object3D::createCollider(ColliderType type) {
 	if (vertexList.empty()) return;
 
-	// Guardar el tipo de colisionador seleccionado
-	colliderType = type;
-
 	// Calcular los límites del objeto (mínimos y máximos)
 	vector4f min = { numeric_limits<float>::max(),
 					 numeric_limits<float>::max(),
@@ -155,36 +152,41 @@ void Object3D::createCollider(ColliderType type) {
 		collider = nullptr;
 	}
 
-	// Crear un BoundingVolume con el tipo correcto
-	BoundingVolume* bv = new BoundingVolume(
-		type == COLLIDER_SPHERE ? SPHERE_TYPE : AABB_TYPE
-	);
+	// Crear el colisionador según el tipo especificado
+	switch (type) {
+	case COLLIDER_SPHERE: {
+		vector4f center = (min + max) * 0.5f;
+		center.w = 1;
+		float radius = distance(center, max) * 1.0;
+		collider = new Sphere(center, radius);
+		break;
+	}
+	case COLLIDER_AABB: {
+		collider = new AABB(min, max);
+		break;
+	}
+					  // Podemos añadir más  (ej: COLLIDER_CAPSULE, COLLIDER_MESH, etc.), como quieras
+	default:
+		collider = new Sphere((min + max) * 0.5f, distance(min, max) * 0.5f);
+		break;
+	}
 
-	// Añadir todos los vértices como partículas al BoundingVolume
+	// Añadir todos los vértices como partículas al colisionador
 	for (const auto& vertex : vertexList) {
-		particle p;
-		p.type = VERTEX_PARTICLE;
-		p.min = vertex.vPos;
-		p.max = p.min;
-		bv->addParticle(p);
+		collider->addVertex(vertex.vPos);
 	}
 
-	// Construir la jerarquía de volúmenes si hay muchos vértices
+	// Opcional: Subdividir el colisionador si hay muchos vértices
 	if (vertexList.size() > 10) {
-		bv->buildHierarchy();
+		collider->subdivide();
 	}
-
-	// Asignar el nuevo BoundingVolume como colisionador
-	collider = bv;
 }
 
 void Object3D::updateCollider() {
 	if (!collider) {
 		createCollider(colliderType);  // Crear el colisionador con el tipo actual
 	}
-
-	// Actualizar con la matriz modelo
-	collider->update(modelMatrix);
+	collider->update(modelMatrix);     // Actualizar con la matriz modelo
 }
 
 
